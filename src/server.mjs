@@ -155,8 +155,16 @@ function query(params) {
   return text ? `?${text}` : "";
 }
 
+function requireId(toolName, args) {
+  if (!toolName.startsWith("update_") && !toolName.startsWith("archive_")) return undefined;
+  if (args.id === undefined || args.id === null || String(args.id).trim() === "") {
+    throw new Error(`${toolName} requires id`);
+  }
+  return encodeURIComponent(String(args.id).trim());
+}
+
 function apiRouteFor(toolName, args) {
-  const id = encodeURIComponent(args.id || "");
+  const id = requireId(toolName, args);
   const routes = {
     list_accounts: ["GET", `/api/accounts${query({ search: args.search, ownerId: args.owner_id, includeArchived: args.include_archived })}`],
     create_account: ["POST", "/api/accounts"],

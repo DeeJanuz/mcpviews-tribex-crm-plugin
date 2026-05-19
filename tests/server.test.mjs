@@ -40,3 +40,26 @@ test("handleToolCall normalizes audience rows", async () => {
   assert.equal(payload.rows[0].emailAddress, "ada@example.com");
   assert.equal(payload.meta.outputRows, 1);
 });
+
+test("update and archive CRM tools require id before proxying", async () => {
+  const originalFetch = globalThis.fetch;
+  let fetchCalls = 0;
+  globalThis.fetch = async () => {
+    fetchCalls += 1;
+    throw new Error("fetch should not be called without id");
+  };
+
+  try {
+    await assert.rejects(
+      handleToolCall("update_account", { name: "Acme" }),
+      /update_account requires id/
+    );
+    await assert.rejects(
+      handleToolCall("archive_contact", { id: "" }),
+      /archive_contact requires id/
+    );
+    assert.equal(fetchCalls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

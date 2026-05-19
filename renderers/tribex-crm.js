@@ -102,7 +102,15 @@
       headers: headers(state),
       body: body ? JSON.stringify(body) : undefined
     }).then(function(response) {
-      return response.json().then(function(payload) {
+      return response.text().then(function(text) {
+        var payload = {};
+        if (text) {
+          try {
+            payload = JSON.parse(text);
+          } catch (error) {
+            if (response.ok) throw error;
+          }
+        }
         if (!response.ok) throw new Error(payload.error && payload.error.message || "Request failed");
         return payload.data;
       });
