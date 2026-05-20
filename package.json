@@ -4,9 +4,14 @@
   "description": "MCPViews plugin for the TribeX CRM service, including a compact CRM renderer and local MCP bridge.",
   "type": "module",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DeeJanuz/mcpviews-tribex-crm-plugin.git"
+  },
   "scripts": {
     "start": "node src/server.mjs",
-    "check": "node --check src/*.mjs && node --check tests/*.mjs",
+    "package": "mkdir -p dist && rm -f dist/tribex-crm.zip && zip -q -r dist/tribex-crm.zip manifest.json package.json renderers src tests docs README.md AGENTS.md",
+    "check": "node --check src/*.mjs && node --check tests/*.mjs && node --check renderers/*.js",
     "test": "node --test tests/*.test.mjs"
   },
   "keywords": [

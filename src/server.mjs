@@ -5,6 +5,7 @@ import {
   DEFAULT_PORT,
   PLUGIN_NAME,
   PLUGIN_VERSION,
+  TRUSTED_HEADER_SECRET,
   TOOL_PREFIX,
 } from "./constants.mjs";
 import { normalizeAudienceRows } from "./audience-rows.mjs";
@@ -28,15 +29,11 @@ const CRM_TOOL_DEFINITIONS = [
   "export_audience",
 ].map((name) => ({
   name,
-  description: `Proxy ${name} to the TribeX CRM service API.`,
+  description: `Run ${name.replace(/_/g, " ")} against the configured TribeX CRM workspace.`,
   inputSchema: {
     type: "object",
     additionalProperties: true,
-    properties: {
-      api_base: { type: "string" },
-      organization_id: { type: "string" },
-      user_id: { type: "string" },
-    },
+    properties: {},
   },
 }));
 
@@ -48,9 +45,6 @@ export const TOOL_DEFINITIONS = [
       type: "object",
       additionalProperties: true,
       properties: {
-        api_base: { type: "string" },
-        organization_id: { type: "string" },
-        user_id: { type: "string" },
         initial_tab: {
           type: "string",
           enum: ["accounts", "contacts", "opportunities", "stages", "audience"],
@@ -104,6 +98,12 @@ async function readJson(request) {
   return text.trim() ? JSON.parse(text) : {};
 }
 
+async function readBody(request) {
+  const chunks = [];
+  for await (const chunk of request) chunks.push(chunk);
+  return Buffer.concat(chunks);
+}
+
 function sendJson(response, status, body, extraHeaders = {}) {
   response.writeHead(status, {
     "Content-Type": "application/json",
@@ -113,9 +113,13 @@ function sendJson(response, status, body, extraHeaders = {}) {
 }
 
 function setCors(response) {
+  response.setHeader("Vary", "Origin");
   response.setHeader("Access-Control-Allow-Origin", "*");
-  response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, mcp-session-id");
+  response.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
+  response.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, mcp-session-id, x-tribex-organization-id, x-tribex-user-id"
+  );
 }
 
 function normalizeToolName(name) {
@@ -125,9 +129,6 @@ function normalizeToolName(name) {
 function rendererPayload(args = {}) {
   return {
     renderer: "tribex_crm",
-    api_base: args.api_base || args.apiBase || DEFAULT_CRM_API_BASE,
-    organization_id: args.organization_id || args.organizationId || process.env.TRIBEX_CRM_ORGANIZATION_ID || "",
-    user_id: args.user_id || args.userId || process.env.TRIBEX_CRM_USER_ID || "",
     initial_tab: args.initial_tab || args.initialTab || "accounts",
     audience: Array.isArray(args.audience) ? args.audience : [],
   };
@@ -141,8 +142,28 @@ function authHeaders(args = {}) {
   };
   if (organizationId) headers["x-tribex-organization-id"] = organizationId;
   if (userId) headers["x-tribex-user-id"] = userId;
+  if (TRUSTED_HEADER_SECRET) headers["x-tribex-crm-trusted-header-secret"] = TRUSTED_HEADER_SECRET;
   if (args.authorization) headers.Authorization = args.authorization;
   return headers;
+}
+
+async function proxyCrmHttpRequest(request, response) {
+  const requestUrl = new URL(request.url, `http://${request.headers.host || `${DEFAULT_HOST}:${DEFAULT_PORT}`}`);
+  const apiBase = DEFAULT_CRM_API_BASE.replace(/\/$/, "");
+  const authorization = request.headers.authorization;
+  const body = await readBody(request);
+  const proxied = await fetch(`${apiBase}${requestUrl.pathname}${requestUrl.search}`, {
+    method: request.method,
+    headers: authHeaders({
+      organization_id: request.headers["x-tribex-organization-id"],
+      user_id: request.headers["x-tribex-user-id"],
+      authorization,
+    }),
+    body: body.length ? body : undefined,
+  });
+  const contentType = proxied.headers.get("content-type") || "application/json";
+  response.writeHead(proxied.status, { "Content-Type": contentType });
+  response.end(Buffer.from(await proxied.arrayBuffer()));
 }
 
 function query(params) {
@@ -294,6 +315,15 @@ export function createServer() {
 
     if (request.method === "GET" && request.url === "/health") {
       sendJson(response, 200, { ok: true, plugin: PLUGIN_NAME, version: PLUGIN_VERSION });
+      return;
+    }
+
+    if (request.url?.startsWith("/api/")) {
+      try {
+        await proxyCrmHttpRequest(request, response);
+      } catch (error) {
+        sendJson(response, 502, { error: error.message || "CRM proxy failed" });
+      }
       return;
     }
 

@@ -1,6 +1,7 @@
 {
   "name": "tribex-crm",
   "version": "0.1.0",
+  "download_url": "https://github.com/DeeJanuz/mcpviews-tribex-crm-plugin/releases/download/0.1.0/tribex-crm.zip",
   "renderers": {
     "tribex-crm-open": "tribex_crm",
     "tribex-crm-audience-normalize": "rich_content",
@@ -32,7 +33,7 @@
       "description": "Standalone lightweight CRM workspace for accounts, contacts, opportunities, custom stages, and email audience handoff.",
       "scope": "universal",
       "tools": ["tribex-crm-open"],
-      "data_hint": "{ \"api_base\"?: \"string\", \"organization_id\"?: \"string\", \"user_id\"?: \"string\", \"initial_tab\"?: \"accounts|contacts|opportunities|stages|audience\", \"audience\"?: \"array\" }",
+      "data_hint": "{ \"initial_tab\"?: \"accounts|contacts|opportunities|stages|audience\", \"audience\"?: \"array\" }",
       "rule": "Use `tribex_crm` when the user wants to browse or manage TribeX CRM records, inspect opportunities by stage, or prepare inline CRM audience rows for TribeX email workflows.",
       "display_mode": "replace",
       "standalone": true,
@@ -87,7 +88,7 @@
   },
   "plugin_rules": [
     "The TribeX CRM plugin is a lightweight operational workspace, not a marketing site.",
-    "The renderer should use shared auth/cookie context in hosted environments and trusted local org/user fields only for development.",
+    "CRM connection details are resolved by MCPViews and the local bridge; the renderer must not expose API, organization, user, or secret fields in the end-user UI.",
     "Audience handoff returns inline rows only in v1; durable audience artifacts are deferred until needed.",
     "Production CRM persistence remains owned by the `tribex-crm` service; the plugin bridge must not invent a second storage layer."
   ]

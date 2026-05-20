@@ -17,17 +17,25 @@ test("TOOL_DEFINITIONS exposes renderer and CRM bridge tools", () => {
 test("handleToolCall returns renderer payload", async () => {
   const payload = parseToolResult(
     await handleToolCall("tribex_crm__tribex-crm-open", {
-      api_base: "http://crm.local",
-      organization_id: "org_1",
-      user_id: "user_1",
       initial_tab: "contacts",
     })
   );
 
   assert.equal(payload.renderer, "tribex_crm");
-  assert.equal(payload.api_base, "http://crm.local");
-  assert.equal(payload.organization_id, "org_1");
+  assert.equal(payload.api_base, undefined);
+  assert.equal(payload.organization_id, undefined);
+  assert.equal(payload.user_id, undefined);
   assert.equal(payload.initial_tab, "contacts");
+});
+
+test("open tool schema does not advertise connection fields", () => {
+  const openTool = TOOL_DEFINITIONS.find((tool) => tool.name === "tribex-crm-open");
+  const properties = openTool.inputSchema.properties;
+
+  assert.equal(properties.api_base, undefined);
+  assert.equal(properties.organization_id, undefined);
+  assert.equal(properties.user_id, undefined);
+  assert.ok(properties.initial_tab);
 });
 
 test("handleToolCall normalizes audience rows", async () => {
