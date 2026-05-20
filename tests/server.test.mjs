@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { DEFAULT_CRM_API_BASE } from "../src/constants.mjs";
 import { handleToolCall, TOOL_DEFINITIONS } from "../src/server.mjs";
 
 function parseToolResult(result) {
@@ -12,6 +13,10 @@ test("TOOL_DEFINITIONS exposes renderer and CRM bridge tools", () => {
   assert.ok(names.includes("tribex-crm-open"));
   assert.ok(names.includes("list_accounts"));
   assert.ok(names.includes("export_audience"));
+});
+
+test("CRM bridge defaults to deployed service", () => {
+  assert.equal(DEFAULT_CRM_API_BASE, "https://crm.tribexai.com");
 });
 
 test("handleToolCall returns renderer payload", async () => {

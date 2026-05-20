@@ -1,6 +1,6 @@
 {
   "name": "mcpviews-tribex-crm-plugin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCPViews plugin for the TribeX CRM service, including a compact CRM renderer and local MCP bridge.",
   "type": "module",
   "private": true,

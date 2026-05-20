@@ -16,7 +16,7 @@ npm run package
 npm start
 ```
 
-By default the plugin bridge points at `http://127.0.0.1:3012`. Override with:
+By default the plugin bridge points at the deployed CRM service, `https://crm.tribexai.com`. Override for local CRM service development with:
 
 ```bash
 TRIBEX_CRM_API_BASE=http://127.0.0.1:3012 npm start
@@ -47,5 +47,5 @@ The MCPViews registry reads `manifest.json` from this repository and installs th
 npm run check
 npm test
 npm run package
-gh release create 0.1.0 dist/tribex-crm.zip --title 0.1.0 --notes "Initial TribeX CRM MCPViews plugin release."
+gh release create 0.1.1 dist/tribex-crm.zip --title 0.1.1 --notes "Default the CRM bridge to the deployed crm.tribexai.com service."
 ```
